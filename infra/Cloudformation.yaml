@@ -28,9 +28,6 @@ Parameters:
     Type: String
     Description: Identity Center customer application ARN.
     Default: ""
-  PrivateSubnetIds:
-    Description: List of IDs of existing public subnets. Please select at least two subnets
-    Type: List<AWS::EC2::Subnet::Id>
   SyncSchedule:
     Type: String
     
@@ -132,19 +129,12 @@ Resources:
             Condition:
               StringEquals:
                 aws:ResourceAccount: !Ref AWS::AccountId
-          # - Sid: AllowUseofEncryptionKey
-          #   Effect: Allow
-          #   Action:
-          #     - kms:Decrypt
-          #   Resource: !Sub "arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/${S3EncryptionKeyId}"
           - Sid: AllowsAmazonQToCreateAndDeleteENI
             Effect: Allow
             Action:
             - ec2:CreateNetworkInterface
             - ec2:DeleteNetworkInterface
             Resource:
-            - !Join ["/", [!Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:subnet", !Select [0, !Split [',', !Join [',', !Ref PrivateSubnetIds]]]]]
-            - !Join ["/", [!Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:subnet", !Select [1, !Split [',', !Join [',', !Ref PrivateSubnetIds]]]]]
             - !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${SecurityGroup}"
           - Sid: AllowsAmazonQToCreateDeleteENI
             Effect: Allow
@@ -185,7 +175,6 @@ Resources:
               - "secretsmanager:ListSecretVersionIds"
             Resource:
               - !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:QBusiness*"
-
 
   QDataSourceRole:
     Type: AWS::IAM::Role
@@ -235,26 +224,11 @@ Resources:
                 dataSourceFieldName: "s3_document_id"
         syncMode: "FULL_CRAWL"
         type: "S3"
-      #Description: String
       DisplayName: !Sub "${AWS::StackName}-s3-ds"
       IndexId: !GetAtt QIndex.IndexId
       RoleArn: !GetAtt QDataSourceRole.Arn
       SyncSchedule: !Ref SyncSchedule
-      # VpcConfiguration: 
-      #   SecurityGroupIds: 
-      #     - !Ref SecurityGroup
-      #   SubnetIds: !Ref PrivateSubnetIds
 
-
-
-
-
-
-
-
-
-
-  # Original App
   QManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
